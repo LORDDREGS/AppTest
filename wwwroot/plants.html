@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление заводами</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        .action-buttons {
+            margin-top: 20px;
+        }
+        .edit-input {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Управление заводами</h1>
+    <div>
+        <h2>Форма завода</h2>
+        <input type="hidden" id="plantId" />
+        <p>
+            Название:<br/>
+            <input id="plantName" />
+        </p>
+        <p>
+            Краткое название:<br />
+            <input id="plantShortName" />
+        </p>
+        <p>
+            <button id="savePlantBtn">Сохранить</button>
+            <button id="resetPlantBtn">Сбросить</button>
+        </p>
+    </div>
+    <div class="action-buttons">
+        <button onclick="resetPlantForm()">Добавить новый завод</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Название</th>
+                <th>Краткое название</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody id="plantList"></tbody>
+    </table>
+
+    <script>
+        const plantList = document.getElementById('plantList');
+        const plantBaseUrl = '/api/plants'; // Базовый URL для всех заводов
+
+        // Получение всех заводов
+        async function getPlants() {
+            try {
+                const response = await fetch(plantBaseUrl);
+                if (!response.ok) throw new Error('Не удалось получить заводы');
+                const plants = await response.json();
+                plantList.innerHTML = plants.map(plant => createPlantRow(plant)).join('');
+            } catch (error) {
+                console.error('Ошибка при загрузке заводов:', error);
+            }
+        }
+
+        // Получение одного завода по ID
+        async function getPlant(id) {
+            try {
+                const response = await fetch(`${plantBaseUrl}/${id}`);
+                if (!response.ok) throw new Error('Не удалось получить завод');
+                const plant = await response.json();
+                document.getElementById("plantId").value = plant._id; // Используйте _id для MongoDB
+                document.getElementById("plantName").value = plant.name || '';
+                document.getElementById("plantShortName").value = plant.shortName || '';
+            } catch (error) {
+                console.error('Ошибка при получении завода:', error);
+            }
+        }
+
+        // Добавление нового завода
+        async function createPlant(plant) {
+            try {
+                const response = await fetch(plantBaseUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(plant)
+                });
+                if (!response.ok) throw new Error('Не удалось создать завод');
+                const newPlant = await response.json();
+                plantList.insertAdjacentHTML('afterbegin', createPlantRow(newPlant));
+            } catch (error) {
+                console.error('Ошибка при создании завода:', error);
+            }
+        }
+
+        // Изменение завода
+        async function editPlant(plant) {
+            try {
+                if (!plant._id) {
+                    console.error('Ошибка: ID завода не указан для обновления');
+                    return; // Прекращаем выполнение, если ID не задан
+                }
+
+                const response = await fetch(`${plantBaseUrl}/${plant._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(plant)
+                });
+                if (!response.ok) throw new Error('Не удалось обновить завод');
+                const updatedPlant = await response.json();
+                const rowElement = document.querySelector(`tr[data-id='${plant._id}']`);
+                if (rowElement) rowElement.outerHTML = createPlantRow(updatedPlant);
+            } catch (error) {
+                console.error('Ошибка при обновлении завода:', error);
+            }
+        }
+
+        // Удаление завода
+        async function deletePlant(rowElement) {
+            const plantId = rowElement.dataset.id;
+            if (!plantId) {
+                console.error('Ошибка: ID завода не указан или недопустим');
+                return; // Прекращаем выполнение, если ID не задан
+            }
+
+            try {
+                const response = await fetch(`${plantBaseUrl}/${plantId}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('Не удалось удалить завод');
+                rowElement.remove();
+            } catch (error) {
+                console.error('Ошибка при удалении завода:', error);
+            }
+        }
+
+        // Сброс данных формы
+        function resetPlantForm() {
+            document.getElementById("plantId").value = '';
+            document.getElementById("plantName").value = '';
+            document.getElementById("plantShortName").value = '';
+        }
+
+        // Создание строки таблицы завода
+        function createPlantRow(plant) {
+            return `
+                <tr data-id="${plant._id}">
+                    <td>${plant._id || ''}</td>
+                    <td>${plant.name || ''}</td>
+                    <td>${plant.shortName || ''}</td>
+                    <td>
+                        <button onclick="getPlant('${plant._id}')">Изменить</button>
+                        <button onclick="deletePlant(this.closest('tr'))">Удалить</button>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Обработка событий
+        document.getElementById("resetPlantBtn").addEventListener("click", resetPlantForm);
+
+        document.getElementById("savePlantBtn").addEventListener("click", async () => {
+            const id = document.getElementById("plantId").value;
+            const plant = {
+                name: document.getElementById("plantName").value,
+                shortName: document.getElementById("plantShortName").value
+            };
+
+            if (id) {
+                // Если id есть, редактируем существующий завод
+                plant._id = id;
+                await editPlant(plant);
+            } else {
+                // Если id нет, создаём новый завод
+                await createPlant(plant);
+            }
+
+            resetPlantForm();
+        });
+
+        // Загрузка заводов при инициализации
+        getPlants();
+    </script>
+</body>
+</html>
