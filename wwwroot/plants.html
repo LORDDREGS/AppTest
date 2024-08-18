@@ -77,7 +77,7 @@
                 const response = await fetch(`${plantBaseUrl}/${id}`);
                 if (!response.ok) throw new Error('Не удалось получить завод');
                 const plant = await response.json();
-                document.getElementById("plantId").value = plant._id; // Используйте _id для MongoDB
+                document.getElementById("plantId").value = plant.id;
                 document.getElementById("plantName").value = plant.name || '';
                 document.getElementById("plantShortName").value = plant.shortName || '';
             } catch (error) {
@@ -96,6 +96,7 @@
                 if (!response.ok) throw new Error('Не удалось создать завод');
                 const newPlant = await response.json();
                 plantList.insertAdjacentHTML('afterbegin', createPlantRow(newPlant));
+                localStorage.setItem('plantUpdated', Date.now()); // Оповещаем другие страницы об обновлении
             } catch (error) {
                 console.error('Ошибка при создании завода:', error);
             }
@@ -104,20 +105,21 @@
         // Изменение завода
         async function editPlant(plant) {
             try {
-                if (!plant._id) {
+                if (!plant.id) {
                     console.error('Ошибка: ID завода не указан для обновления');
                     return; // Прекращаем выполнение, если ID не задан
                 }
 
-                const response = await fetch(`${plantBaseUrl}/${plant._id}`, {
+                const response = await fetch(`${plantBaseUrl}/${plant.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(plant)
                 });
                 if (!response.ok) throw new Error('Не удалось обновить завод');
                 const updatedPlant = await response.json();
-                const rowElement = document.querySelector(`tr[data-id='${plant._id}']`);
+                const rowElement = document.querySelector(`tr[data-id='${plant.id}']`);
                 if (rowElement) rowElement.outerHTML = createPlantRow(updatedPlant);
+                localStorage.setItem('plantUpdated', Date.now()); // Оповещаем другие страницы об обновлении
             } catch (error) {
                 console.error('Ошибка при обновлении завода:', error);
             }
@@ -137,6 +139,7 @@
                 });
                 if (!response.ok) throw new Error('Не удалось удалить завод');
                 rowElement.remove();
+                localStorage.setItem('plantUpdated', Date.now()); // Оповещаем другие страницы об обновлении
             } catch (error) {
                 console.error('Ошибка при удалении завода:', error);
             }
@@ -152,12 +155,12 @@
         // Создание строки таблицы завода
         function createPlantRow(plant) {
             return `
-                <tr data-id="${plant._id}">
-                    <td>${plant._id || ''}</td>
+                <tr data-id="${plant.id}">
+                    <td>${plant.id || ''}</td>
                     <td>${plant.name || ''}</td>
                     <td>${plant.shortName || ''}</td>
                     <td>
-                        <button onclick="getPlant('${plant._id}')">Изменить</button>
+                        <button onclick="getPlant('${plant.id}')">Изменить</button>
                         <button onclick="deletePlant(this.closest('tr'))">Удалить</button>
                     </td>
                 </tr>
@@ -176,7 +179,7 @@
 
             if (id) {
                 // Если id есть, редактируем существующий завод
-                plant._id = id;
+                plant.id = id;
                 await editPlant(plant);
             } else {
                 // Если id нет, создаём новый завод
@@ -188,6 +191,13 @@
 
         // Загрузка заводов при инициализации
         getPlants();
+
+        // Обработка обновлений на других страницах
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'plantUpdated') {
+                getPlants();
+            }
+        });
     </script>
 </body>
 </html>
