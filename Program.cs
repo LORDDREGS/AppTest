@@ -15,6 +15,8 @@ var database = mongoClient.GetDatabase("ManageApp");
 var usersCollection = database.GetCollection<User>("users");
 var plantsCollection = database.GetCollection<Plant>("plants");
 var departmentsCollection = database.GetCollection<Department>("departments");
+var positionsCollection = database.GetCollection<Position>("positions");
+
 var countersCollection = database.GetCollection<BsonDocument>("counters");
 
 var app = builder.Build();
@@ -324,6 +326,113 @@ app.MapDelete("/api/departments/{id}", async (string id) =>
     }
 });
 
+// Позиции
+// Получение всех позиций
+app.MapGet("/api/positions", async () =>
+{
+    try
+    {
+        var positions = await positionsCollection.Find(_ => true).ToListAsync();
+        return Results.Ok(positions);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+        return Results.Problem("Internal Server Error");
+    }
+});
+
+// Получение позиции по ID
+app.MapGet("/api/positions/{id}", async (string id) =>
+{
+    try
+    {
+        if (!ObjectId.TryParse(id, out var objectId))
+        {
+            return Results.BadRequest(new { message = "Invalid position ID." });
+        }
+
+        var position = await positionsCollection.Find(p => p.Id == id).FirstOrDefaultAsync();
+        return position is null ? Results.NotFound(new { message = "Position not found." }) : Results.Ok(position);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+        return Results.Problem("Internal Server Error");
+    }
+});
+
+// Создание новой позиции
+app.MapPost("/api/positions", async (Position position) =>
+{
+    try
+    {
+        if (string.IsNullOrWhiteSpace(position.Plant) || string.IsNullOrWhiteSpace(position.Department))
+        {
+            return Results.BadRequest(new { message = "Invalid ObjectId values." });
+        }
+
+        position.Id = ObjectId.GenerateNewId().ToString(); // Генерация нового ID
+        await positionsCollection.InsertOneAsync(position);
+        return Results.Created($"/api/positions/{position.Id}", position);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+        return Results.Problem("Internal Server Error");
+    }
+});
+
+// Обновление позиции
+app.MapPut("/api/positions/{id}", async (string id, Position updatedPosition) =>
+{
+    try
+    {
+        if (!ObjectId.TryParse(id, out var objectId))
+        {
+            return Results.BadRequest(new { message = "Invalid position ID." });
+        }
+
+        var filter = Builders<Position>.Filter.Eq(p => p.Id, id);
+        var update = Builders<Position>.Update
+            .Set(p => p.Name, updatedPosition.Name)
+            .Set(p => p.ShortName, updatedPosition.ShortName)
+            .Set(p => p.Plant, updatedPosition.Plant)
+            .Set(p => p.Department, updatedPosition.Department);
+
+        var options = new FindOneAndUpdateOptions<Position> { ReturnDocument = ReturnDocument.After };
+
+        var result = await positionsCollection.FindOneAndUpdateAsync(filter, update, options);
+
+        return result is null ? Results.NotFound(new { message = "Position not found." }) : Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+        return Results.Problem("Internal Server Error");
+    }
+});
+
+// Удаление позиции
+app.MapDelete("/api/positions/{id}", async (string id) =>
+{
+    try
+    {
+        if (!ObjectId.TryParse(id, out var objectId))
+        {
+            return Results.BadRequest(new { message = "Invalid position ID." });
+        }
+
+        var result = await positionsCollection.FindOneAndDeleteAsync(p => p.Id == id);
+        return result is null ? Results.NotFound(new { message = "Position not found." }) : Results.Ok(result);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+        return Results.Problem("Internal Server Error");
+    }
+});
+
 
 // Запуск приложения
 app.Run();
@@ -365,6 +474,22 @@ public class Department
     public string Plant { get; set; } = ""; // Ссылка на завод
     
     public bool IsAuditor { get; set; } = false; // Флаг, является ли департамент аудитором
+}
+
+public class Position
+{
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; } = "";
+
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Plant { get; set; } = ""; // Ссылка на завод
+
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Department { get; set; } = ""; // Ссылка на департамент
+
+    public string Name { get; set; } = string.Empty; // Название должности
+    public string ShortName { get; set; } = string.Empty; // Краткое название должности
 }
 
 

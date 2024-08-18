@@ -20,6 +20,10 @@
         .edit-input {
             width: 100%;
         }
+        form p {
+            display: inline-block;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
@@ -51,14 +55,18 @@
             Завод:<br />
             <select id="userPlant">
                 <option value="">Выберите завод</option>
-                <!-- Динамически заполняется через JavaScript -->
             </select>
         </p>
         <p>
             Подразделение:<br />
             <select id="userDepartment">
                 <option value="">Выберите подразделение</option>
-                <!-- Динамически заполняется через JavaScript -->
+            </select>
+        </p>
+        <p>
+            Позиция:<br />
+            <select id="userPosition">
+                <option value="">Выберите позицию</option>
             </select>
         </p>
         <p>
@@ -70,6 +78,7 @@
         <button onclick="resetForm()">Добавить нового пользователя</button>
         <a href="plants.html" target="_blank">Управление заводами</a>
         <a href="departments.html" target="_blank">Управление подразделениями</a>
+        <a href="position.html" target="_blank">Управление позициями</a>
     </div>
     <table>
         <thead>
@@ -82,6 +91,7 @@
                 <th>Роли</th>
                 <th>Завод</th>
                 <th>Подразделение</th>
+                <th>Позиция</th>
                 <th>Дата создания</th>
                 <th>Действия</th>
             </tr>
@@ -91,11 +101,29 @@
 
     <script>
         const userList = document.getElementById('userList');
-        const userPlantSelect = document.getElementById('userPlant');
-        const userDepartmentSelect = document.getElementById('userDepartment');
         const baseUrl = '/api/users'; // Базовый URL для всех пользователей
         const plantUrl = '/api/plants'; // Базовый URL для всех заводов
         const departmentUrl = '/api/departments'; // Базовый URL для всех подразделений
+        const positionUrl = '/api/positions'; // Базовый URL для всех позиций
+
+        const userPlantSelect = document.getElementById('userPlant');
+        const userDepartmentSelect = document.getElementById('userDepartment');
+        const userPositionSelect = document.getElementById('userPosition');
+
+        // Получение всех пользователей
+        async function getUsers() {
+            try {
+                const response = await fetch(baseUrl);
+                if (!response.ok) throw new Error('Не удалось получить пользователей');
+                const users = await response.json();
+                const plants = await getPlants(); // Получаем заводы
+                const departments = await getDepartments(); // Получаем подразделения
+                const positions = await getPositions(); // Получаем позиции
+                userList.innerHTML = users.map(user => createUserRow(user, plants, departments, positions)).join('');
+            } catch (error) {
+                console.error('Ошибка при загрузке пользователей:', error);
+            }
+        }
 
         // Получение всех заводов
         async function getPlants() {
@@ -103,9 +131,8 @@
                 const response = await fetch(plantUrl);
                 if (!response.ok) throw new Error('Не удалось получить заводы');
                 const plants = await response.json();
-                console.log('Полученные заводы:', plants); // Отладочный вывод
-                userPlantSelect.innerHTML = '<option value="">Выберите завод</option>' + 
-                plants.map(plant => `<option value="${plant.id}">${plant.name}</option>`).join('');
+                userPlantSelect.innerHTML = '<option value="">Выберите завод</option>' +
+                    plants.map(plant => `<option value="${plant.id}">${plant.name}</option>`).join('');
                 return plants;
             } catch (error) {
                 console.error('Ошибка при загрузке заводов:', error);
@@ -118,26 +145,25 @@
                 const response = await fetch(departmentUrl);
                 if (!response.ok) throw new Error('Не удалось получить подразделения');
                 const departments = await response.json();
-                console.log('Полученные подразделения:', departments); // Отладочный вывод
-                userDepartmentSelect.innerHTML = '<option value="">Выберите подразделение</option>' + 
-                departments.map(department => `<option value="${department.id}">${department.name}</option>`).join('');
+                userDepartmentSelect.innerHTML = '<option value="">Выберите подразделение</option>' +
+                    departments.map(department => `<option value="${department.id}">${department.name}</option>`).join('');
                 return departments;
             } catch (error) {
                 console.error('Ошибка при загрузке подразделений:', error);
             }
         }
 
-        // Получение всех пользователей
-        async function getUsers() {
+        // Получение всех позиций
+        async function getPositions() {
             try {
-                const response = await fetch(baseUrl);
-                if (!response.ok) throw new Error('Не удалось получить пользователей');
-                const users = await response.json();
-                const plants = await getPlants(); // Получаем заводы
-                const departments = await getDepartments(); // Получаем подразделения
-                userList.innerHTML = users.map(user => createUserRow(user, plants, departments)).join('');
+                const response = await fetch(positionUrl);
+                if (!response.ok) throw new Error('Не удалось получить позиции');
+                const positions = await response.json();
+                userPositionSelect.innerHTML = '<option value="">Выберите позицию</option>' +
+                    positions.map(position => `<option value="${position.id}">${position.name}</option>`).join('');
+                return positions;
             } catch (error) {
-                console.error('Ошибка при загрузке пользователей:', error);
+                console.error('Ошибка при загрузке позиций:', error);
             }
         }
 
@@ -153,8 +179,9 @@
                 document.getElementById("userMiddleName").value = user.middleName || '';
                 document.getElementById("userEmail").value = user.email || '';
                 document.getElementById("userRoles").value = user.roles ? user.roles.join(', ') : '';
-                userPlantSelect.value = user.plant || ''; // Устанавливаем выбранное значение завода
-                userDepartmentSelect.value = user.department || ''; // Устанавливаем выбранное значение подразделения
+                userPlantSelect.value = user.plant || '';
+                userDepartmentSelect.value = user.department || '';
+                userPositionSelect.value = user.position || '';
             } catch (error) {
                 console.error('Ошибка при получении пользователя:', error);
             }
@@ -170,7 +197,7 @@
                 });
                 if (!response.ok) throw new Error('Не удалось создать пользователя');
                 const newUser = await response.json();
-                userList.insertAdjacentHTML('afterbegin', createUserRow(newUser, await getPlants(), await getDepartments()));
+                userList.insertAdjacentHTML('afterbegin', createUserRow(newUser));
             } catch (error) {
                 console.error('Ошибка при создании пользователя:', error);
             }
@@ -181,7 +208,7 @@
             try {
                 if (!user.id) {
                     console.error('Ошибка: ID пользователя не указан для обновления');
-                    return; // Прекращаем выполнение, если ID не задан
+                    return;
                 }
 
                 const response = await fetch(`${baseUrl}/${user.id}`, {
@@ -191,10 +218,8 @@
                 });
                 if (!response.ok) throw new Error('Не удалось обновить пользователя');
                 const updatedUser = await response.json();
-                const plants = await getPlants();
-                const departments = await getDepartments();
                 const rowElement = document.querySelector(`tr[data-id='${user.id}']`);
-                if (rowElement) rowElement.outerHTML = createUserRow(updatedUser, plants, departments);
+                if (rowElement) rowElement.outerHTML = createUserRow(updatedUser);
             } catch (error) {
                 console.error('Ошибка при обновлении пользователя:', error);
             }
@@ -205,7 +230,7 @@
             const userId = rowElement.dataset.id;
             if (!userId) {
                 console.error('Ошибка: ID пользователя не указан или недопустим');
-                return; // Прекращаем выполнение, если ID не задан
+                return;
             }
 
             try {
@@ -227,17 +252,16 @@
             document.getElementById("userMiddleName").value = '';
             document.getElementById("userEmail").value = '';
             document.getElementById("userRoles").value = '';
-
-            userPlantSelect.value = ''; // Сброс выбора завода
-            userDepartmentSelect.value = ''; // Сброс выбора подразделения
+            userPlantSelect.value = '';
+            userDepartmentSelect.value = '';
+            userPositionSelect.value = '';
         }
 
         // Создание строки таблицы пользователя
-        function createUserRow(user, plants, departments) {
-            // Находим название завода по ID
+        function createUserRow(user, plants = [], departments = [], positions = []) {
             const plantName = plants.find(plant => plant.id === user.plant)?.name || 'Не указан';
-            // Находим название подразделения по ID
             const departmentName = departments.find(department => department.id === user.department)?.name || 'Не указано';
+            const positionName = positions.find(position => position.id === user.position)?.name || 'Не указано';
             return `
                 <tr data-id="${user.id}">
                     <td>${user.id || ''}</td>
@@ -248,6 +272,7 @@
                     <td>${user.roles ? user.roles.join(', ') : ''}</td>
                     <td>${plantName}</td>
                     <td>${departmentName}</td>
+                    <td>${positionName}</td>
                     <td>${user.createdDate ? new Date(user.createdDate).toLocaleString() : 'Дата не указана'}</td>
                     <td>
                         <button onclick="getUser('${user.id}')">Изменить</button>
@@ -270,33 +295,25 @@
                 roles: document.getElementById("userRoles").value.split(',').map(role => role.trim()),
                 plant: userPlantSelect.value,
                 department: userDepartmentSelect.value,
+                position: userPositionSelect.value,
                 password: 'temporary' // Использовать реальный пароль в продакшене
             };
 
             if (id) {
-                // Если id есть, редактируем существующего пользователя
                 user.id = id;
                 await editUser(user);
             } else {
-                // Если id нет, создаём нового пользователя
                 await createUser(user);
             }
 
             resetForm();
         });
 
-        // Загрузка пользователей, заводов и подразделений при инициализации
+        // Загрузка данных при инициализации
         getUsers();
         getPlants();
         getDepartments();
-
-        // Обработка обновлений на других страницах
-        window.addEventListener('storage', function(event) {
-            if (event.key === 'plantUpdated' || event.key === 'departmentUpdated') {
-                getPlants(); // Обновляем список заводов при изменении на другой странице
-                getDepartments(); // Обновляем список подразделений при изменении на другой странице
-            }
-        });
+        getPositions();
     </script>
 </body>
 </html>
