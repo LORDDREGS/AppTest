@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,24 +9,19 @@
             width: 100%;
             border-collapse: collapse;
         }
-
-        th,
-        td {
+        th, td {
             border: 1px solid #ccc;
             padding: 8px;
             text-align: left;
         }
-
         .action-buttons {
             margin-top: 20px;
         }
-
         .edit-input {
             width: 100%;
         }
     </style>
 </head>
-
 <body>
     <h1>Управление подразделениями</h1>
     <div>
@@ -80,16 +74,16 @@
         const departmentPlantSelect = document.getElementById('departmentPlant');
         const baseUrl = '/api/departments'; // Базовый URL для всех подразделений
         const plantUrl = '/api/plants'; // Базовый URL для всех заводов
+        let plants = [];
 
-        // Получение всех заводов для заполнения выпадающего списка
+        // Получение всех заводов для заполнения выпадающего списка и последующего использования
         async function getPlants() {
             try {
                 const response = await fetch(plantUrl);
                 if (!response.ok) throw new Error('Не удалось получить заводы');
-                const plants = await response.json();
+                plants = await response.json();
                 departmentPlantSelect.innerHTML = '<option value="">Выберите завод</option>' +
                     plants.map(plant => `<option value="${plant.id}">${plant.name}</option>`).join('');
-                return plants;
             } catch (error) {
                 console.error('Ошибка при загрузке заводов:', error);
             }
@@ -184,19 +178,19 @@
             document.getElementById("departmentId").value = '';
             document.getElementById("departmentName").value = '';
             document.getElementById("departmentShortName").value = '';
-            document.getElementById("departmentPlantSelect").value = ''; // Сброс выбора завода
+            departmentPlantSelect.value = ''; // Сброс выбора завода
             document.getElementById("departmentIsAuditor").checked = false; // Сброс флага "Аудитор"
         }
-        
 
         // Создание строки подразделения для таблицы
         function createDepartmentRow(department) {
+            const plantName = plants.find(plant => plant.id === department.plant)?.name || 'Не указан';
             return `
                 <tr data-id="${department.id}">
                     <td>${department.id}</td>
                     <td>${department.name}</td>
                     <td>${department.shortName || ''}</td>
-                    <td>${department.plant || ''}</td>
+                    <td>${plantName}</td>
                     <td>${department.isAuditor ? 'Да' : 'Нет'}</td>
                     <td>
                         <button onclick="getDepartment('${department.id}')">Редактировать</button>
@@ -234,5 +228,3 @@
         });
     </script>
 </body>
-
-</html>

@@ -32,6 +32,20 @@
             <input id="positionName" />
         </p>
         <p>
+            Завод:<br/>
+            <select id="positionPlant">
+                <option value="">Выберите завод</option>
+                <!-- Динамически заполняется через JavaScript -->
+            </select>
+        </p>
+        <p>
+            Подразделение:<br/>
+            <select id="positionDepartment">
+                <option value="">Выберите подразделение</option>
+                <!-- Динамически заполняется через JavaScript -->
+            </select>
+        </p>
+        <p>
             <button id="saveBtn">Сохранить</button>
             <button id="resetBtn">Сбросить</button>
         </p>
@@ -44,6 +58,8 @@
             <tr>
                 <th>ID</th>
                 <th>Название</th>
+                <th>Завод</th>
+                <th>Подразделение</th>
                 <th>Дата создания</th>
                 <th>Действия</th>
             </tr>
@@ -54,6 +70,39 @@
     <script>
         const positionList = document.getElementById('positionList');
         const baseUrl = '/api/positions'; // Базовый URL для всех позиций
+        const plantUrl = '/api/plants'; // URL для всех заводов
+        const departmentUrl = '/api/departments'; // URL для всех подразделений
+
+        const positionPlantSelect = document.getElementById('positionPlant');
+        const positionDepartmentSelect = document.getElementById('positionDepartment');
+
+        // Получение всех заводов
+        async function getPlants() {
+            try {
+                const response = await fetch(plantUrl);
+                if (!response.ok) throw new Error('Не удалось получить заводы');
+                const plants = await response.json();
+                positionPlantSelect.innerHTML = '<option value="">Выберите завод</option>' + 
+                plants.map(plant => `<option value="${plant.id}">${plant.name}</option>`).join('');
+                return plants;
+            } catch (error) {
+                console.error('Ошибка при загрузке заводов:', error);
+            }
+        }
+
+        // Получение всех подразделений
+        async function getDepartments() {
+            try {
+                const response = await fetch(departmentUrl);
+                if (!response.ok) throw new Error('Не удалось получить подразделения');
+                const departments = await response.json();
+                positionDepartmentSelect.innerHTML = '<option value="">Выберите подразделение</option>' + 
+                departments.map(department => `<option value="${department.id}">${department.name}</option>`).join('');
+                return departments;
+            } catch (error) {
+                console.error('Ошибка при загрузке подразделений:', error);
+            }
+        }
 
         // Получение всех позиций
         async function getPositions() {
@@ -61,7 +110,9 @@
                 const response = await fetch(baseUrl);
                 if (!response.ok) throw new Error('Не удалось получить позиции');
                 const positions = await response.json();
-                positionList.innerHTML = positions.map(position => createPositionRow(position)).join('');
+                const plants = await getPlants();
+                const departments = await getDepartments();
+                positionList.innerHTML = positions.map(position => createPositionRow(position, plants, departments)).join('');
             } catch (error) {
                 console.error('Ошибка при загрузке позиций:', error);
             }
@@ -75,6 +126,8 @@
                 const position = await response.json();
                 document.getElementById("positionId").value = position.id;
                 document.getElementById("positionName").value = position.name || '';
+                positionPlantSelect.value = position.plant || '';
+                positionDepartmentSelect.value = position.department || '';
             } catch (error) {
                 console.error('Ошибка при получении позиции:', error);
             }
@@ -90,7 +143,9 @@
                 });
                 if (!response.ok) throw new Error('Не удалось создать позицию');
                 const newPosition = await response.json();
-                positionList.insertAdjacentHTML('afterbegin', createPositionRow(newPosition));
+                const plants = await getPlants();
+                const departments = await getDepartments();
+                positionList.insertAdjacentHTML('afterbegin', createPositionRow(newPosition, plants, departments));
             } catch (error) {
                 console.error('Ошибка при создании позиции:', error);
             }
@@ -111,8 +166,10 @@
                 });
                 if (!response.ok) throw new Error('Не удалось обновить позицию');
                 const updatedPosition = await response.json();
+                const plants = await getPlants();
+                const departments = await getDepartments();
                 const rowElement = document.querySelector(`tr[data-id='${position.id}']`);
-                if (rowElement) rowElement.outerHTML = createPositionRow(updatedPosition);
+                if (rowElement) rowElement.outerHTML = createPositionRow(updatedPosition, plants, departments);
             } catch (error) {
                 console.error('Ошибка при обновлении позиции:', error);
             }
@@ -141,14 +198,20 @@
         function resetForm() {
             document.getElementById("positionId").value = '';
             document.getElementById("positionName").value = '';
+            positionPlantSelect.value = '';
+            positionDepartmentSelect.value = '';
         }
 
         // Создание строки таблицы позиции
-        function createPositionRow(position) {
+        function createPositionRow(position, plants, departments) {
+            const plantName = plants.find(plant => plant.id === position.plant)?.name || 'Не указан';
+            const departmentName = departments.find(department => department.id === position.department)?.name || 'Не указано';
             return `
                 <tr data-id="${position.id}">
                     <td>${position.id || ''}</td>
                     <td>${position.name || ''}</td>
+                    <td>${plantName}</td>
+                    <td>${departmentName}</td>
                     <td>${position.createdDate ? new Date(position.createdDate).toLocaleString() : 'Дата не указана'}</td>
                     <td>
                         <button onclick="getPosition('${position.id}')">Изменить</button>
@@ -165,6 +228,8 @@
             const id = document.getElementById("positionId").value;
             const position = {
                 name: document.getElementById("positionName").value,
+                plant: positionPlantSelect.value,
+                department: positionDepartmentSelect.value,
             };
 
             if (id) {
@@ -177,10 +242,12 @@
             resetForm();
         });
 
-        // Загрузка позиций при инициализации
+        // Загрузка позиций, заводов и подразделений при инициализации
+        getPlants();
+        getDepartments();
         getPositions();
 
-        // Обработка обновлений на других страницах
+        // Обработкаобновлений на других страницах
         window.addEventListener('storage', function(event) {
             if (event.key === 'positionUpdated') {
                 getPositions();
