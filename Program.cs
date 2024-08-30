@@ -30,7 +30,27 @@ app.MapGet("/api/users", async () =>
     try
     {
         var users = await usersCollection.Find(_ => true).ToListAsync();
-        return Results.Ok(users);
+
+        var plants = await plantsCollection.Find(_ => true).ToListAsync();
+        var departments = await departmentsCollection.Find(_ => true).ToListAsync();
+        var positions = await positionsCollection.Find(_ => true).ToListAsync();
+
+        var result = users.Select(user => new
+        {
+            user.Id,
+            user.Email,
+            user.LastName,
+            user.FirstName,
+            user.MiddleName,
+            user.Password,
+            user.CreatedDate,
+            user.Roles,
+            PlantName = plants.FirstOrDefault(p => p.Id == user.Plant)?.Name,
+            DepartmentName = departments.FirstOrDefault(d => d.Id == user.Department)?.Name,
+            PositionName = positions.FirstOrDefault(pos => pos.Id == user.Position)?.Name
+        });
+
+        return Results.Ok(result);
     }
     catch (Exception ex)
     {
@@ -38,6 +58,7 @@ app.MapGet("/api/users", async () =>
         return Results.Problem("Internal Server Error");
     }
 });
+
 
 app.MapGet("/api/users/{id}", async (string id) =>
 {
@@ -442,16 +463,16 @@ public class User
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = "";
-
+ 
     [BsonRepresentation(BsonType.ObjectId)]
     public string Plant { get; set; } = ""; // Ссылка на завод
-    
+ 
     [BsonRepresentation(BsonType.ObjectId)]
     public string Department { get; set; }  = "";// Ссылка на подразделение
-    
+ // почему у тебя они указаны как строки?
     [BsonRepresentation(BsonType.ObjectId)]
     public string Position { get; set; }  = "";// Ссылка на должность
-    
+ 
     public string Email { get; set; } = string.Empty; // Email пользователя
     public string LastName { get; set; } = string.Empty; // Фамилия
     public string FirstName { get; set; } = string.Empty; // Имя

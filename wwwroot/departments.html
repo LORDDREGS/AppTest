@@ -39,7 +39,6 @@
             Завод:<br />
             <select id="departmentPlant">
                 <option value="">Выберите завод</option>
-                <!-- Динамически заполняется через JavaScript -->
             </select>
         </p>
         <p>
@@ -53,7 +52,7 @@
     </div>
     <div class="action-buttons">
         <button onclick="resetForm()">Добавить новое подразделение</button>
-        <a href="index.html" target="_blank">Назад к управлению пользователями</a>
+        <a href="plant.html" target="_blank">Перейти к управлению заводами</a>
     </div>
     <table>
         <thead>
@@ -72,11 +71,10 @@
     <script>
         const departmentList = document.getElementById('departmentList');
         const departmentPlantSelect = document.getElementById('departmentPlant');
-        const baseUrl = '/api/departments'; // Базовый URL для всех подразделений
-        const plantUrl = '/api/plants'; // Базовый URL для всех заводов
+        const baseUrl = '/api/departments'; // URL для подразделений
+        const plantUrl = '/api/plants'; // URL для заводов
         let plants = [];
 
-        // Получение всех заводов для заполнения выпадающего списка и последующего использования
         async function getPlants() {
             try {
                 const response = await fetch(plantUrl);
@@ -89,7 +87,6 @@
             }
         }
 
-        // Получение всех подразделений
         async function getDepartments() {
             try {
                 const response = await fetch(baseUrl);
@@ -101,7 +98,6 @@
             }
         }
 
-        // Получение одного подразделения по ID
         async function getDepartment(id) {
             try {
                 const response = await fetch(`${baseUrl}/${id}`);
@@ -110,14 +106,13 @@
                 document.getElementById("departmentId").value = department.id;
                 document.getElementById("departmentName").value = department.name || '';
                 document.getElementById("departmentShortName").value = department.shortName || '';
-                departmentPlantSelect.value = department.plant || ''; // Устанавливаем выбранное значение завода
+                departmentPlantSelect.value = department.plant || '';
                 document.getElementById("departmentIsAuditor").checked = department.isAuditor || false;
             } catch (error) {
                 console.error('Ошибка при получении подразделения:', error);
             }
         }
 
-        // Добавление нового подразделения
         async function createDepartment(department) {
             try {
                 const response = await fetch(baseUrl, {
@@ -128,18 +123,15 @@
                 if (!response.ok) throw new Error('Не удалось создать подразделение');
                 const newDepartment = await response.json();
                 departmentList.insertAdjacentHTML('afterbegin', createDepartmentRow(newDepartment));
+                localStorage.setItem('departmentUpdated', Date.now());
             } catch (error) {
                 console.error('Ошибка при создании подразделения:', error);
             }
         }
 
-        // Изменение подразделения
         async function editDepartment(department) {
             try {
-                if (!department.id) {
-                    console.error('Ошибка: ID подразделения не указан для обновления');
-                    return; // Прекращаем выполнение, если ID не задан
-                }
+                if (!department.id) return;
 
                 const response = await fetch(`${baseUrl}/${department.id}`, {
                     method: 'PUT',
@@ -150,18 +142,15 @@
                 const updatedDepartment = await response.json();
                 const rowElement = document.querySelector(`tr[data-id='${department.id}']`);
                 if (rowElement) rowElement.outerHTML = createDepartmentRow(updatedDepartment);
+                localStorage.setItem('departmentUpdated', Date.now());
             } catch (error) {
                 console.error('Ошибка при обновлении подразделения:', error);
             }
         }
 
-        // Удаление подразделения
         async function deleteDepartment(rowElement) {
             const departmentId = rowElement.dataset.id;
-            if (!departmentId) {
-                console.error('Ошибка: ID подразделения не указан или недопустим');
-                return; // Прекращаем выполнение, если ID не задан
-            }
+            if (!departmentId) return;
 
             try {
                 const response = await fetch(`${baseUrl}/${departmentId}`, {
@@ -169,6 +158,7 @@
                 });
                 if (!response.ok) throw new Error('Не удалось удалить подразделение');
                 rowElement.remove();
+                localStorage.setItem('departmentUpdated', Date.now());
             } catch (error) {
                 console.error('Ошибка при удалении подразделения:', error);
             }
@@ -178,11 +168,10 @@
             document.getElementById("departmentId").value = '';
             document.getElementById("departmentName").value = '';
             document.getElementById("departmentShortName").value = '';
-            departmentPlantSelect.value = ''; // Сброс выбора завода
-            document.getElementById("departmentIsAuditor").checked = false; // Сброс флага "Аудитор"
+            departmentPlantSelect.value = '';
+            document.getElementById("departmentIsAuditor").checked = false;
         }
 
-        // Создание строки подразделения для таблицы
         function createDepartmentRow(department) {
             const plantName = plants.find(plant => plant.id === department.plant)?.name || 'Не указан';
             return `
@@ -194,12 +183,11 @@
                     <td>${department.isAuditor ? 'Да' : 'Нет'}</td>
                     <td>
                         <button onclick="getDepartment('${department.id}')">Редактировать</button>
-                        <button onclick="deleteDepartment(this.parentElement.parentElement)">Удалить</button>
+                        <button onclick="deleteDepartment(this.closest('tr'))">Удалить</button>
                     </td>
                 </tr>`;
         }
 
-        // Обработка нажатия кнопки "Сохранить"
         document.getElementById('saveBtn').addEventListener('click', async () => {
             const department = {
                 id: document.getElementById("departmentId").value,
@@ -218,13 +206,18 @@
             resetForm();
         });
 
-        // Обработка нажатия кнопки "Сбросить"
         document.getElementById('resetBtn').addEventListener('click', resetForm);
 
-        // Инициализация данных
         document.addEventListener('DOMContentLoaded', () => {
             getPlants();
             getDepartments();
         });
+
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'departmentUpdated') {
+                getDepartments();
+            }
+        });
     </script>
 </body>
+</html>
