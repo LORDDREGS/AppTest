@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Управление позициями</title>
+    <!-- Подключение Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <style>
         table {
             width: 100%;
@@ -20,53 +22,68 @@
         .edit-input {
             width: 100%;
         }
+        .back-button {
+            position: fixed;
+            left: 0;
+            bottom: 0;
+            margin: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>Управление позициями</h1>
-    <div>
-        <h2>Форма позиции</h2>
-        <input type="hidden" id="positionId" />
-        <p>
-            Название позиции:<br/>
-            <input id="positionName" />
-        </p>
-        <p>
-            Завод:<br/>
-            <select id="positionPlant">
-                <option value="">Выберите завод</option>
-                <!-- Динамически заполняется через JavaScript -->
-            </select>
-        </p>
-        <p>
-            Подразделение:<br/>
-            <select id="positionDepartment">
-                <option value="">Выберите подразделение</option>
-                <!-- Динамически заполняется через JavaScript -->
-            </select>
-        </p>
-        <p>
-            <button id="saveBtn">Сохранить</button>
-            <button id="resetBtn">Сбросить</button>
-        </p>
+    <div class="container">
+        <h1 class="my-4">Управление позициями</h1>
+        <div>
+            <h2>Форма позиции</h2>
+            <input type="hidden" id="positionId" />
+            <div class="form-group">
+                <label for="positionName">Название позиции:</label>
+                <input id="positionName" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label for="positionPlant">Завод:</label>
+                <select id="positionPlant" class="form-control">
+                    <option value="">Выберите завод</option>
+                    <!-- Динамически заполняется через JavaScript -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="positionDepartment">Подразделение:</label>
+                <select id="positionDepartment" class="form-control">
+                    <option value="">Выберите подразделение</option>
+                    <!-- Динамически заполняется через JavaScript -->
+                </select>
+            </div>
+            <p>
+                <button id="saveBtn" class="btn btn-primary">Сохранить</button>
+                <button id="resetBtn" class="btn btn-secondary">Сбросить</button>
+            </p>
+        </div>
+        <div class="action-buttons">
+            <button onclick="resetForm()" class="btn btn-success">Добавить новую позицию</button>
+            <button type="button" class="btn btn-info" onclick="window.location.href='http://localhost:5279/plant.html'">Перейти к управлению заводами</button>
+        </div>
+        <table class="table table-bordered mt-4">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Завод</th>
+                    <th>Подразделение</th>
+                    <th>Дата создания</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="positionList"></tbody>
+        </table>
+        <button onclick="window.location.href='http://localhost:5279/'" class="btn btn-outline-secondary back-button">Назад</button>
     </div>
-    <div class="action-buttons">
-        <button onclick="resetForm()">Добавить новую позицию</button>
-    </div>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Название</th>
-                <th>Завод</th>
-                <th>Подразделение</th>
-                <th>Дата создания</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody id="positionList"></tbody>
-    </table>
 
+    <!-- Подключение Bootstrap JS и зависимостей -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
     <script>
         const positionList = document.getElementById('positionList');
         const baseUrl = '/api/positions'; // Базовый URL для всех позиций
@@ -204,8 +221,11 @@
 
         // Создание строки таблицы позиции
         function createPositionRow(position, plants, departments) {
+            // Поиск названий завода и подразделения по их ID
             const plantName = plants.find(plant => plant.id === position.plant)?.name || 'Не указан';
             const departmentName = departments.find(department => department.id === position.department)?.name || 'Не указано';
+        
+            // Возврат строки HTML для позиции
             return `
                 <tr data-id="${position.id}">
                     <td>${position.id || ''}</td>
@@ -214,45 +234,47 @@
                     <td>${departmentName}</td>
                     <td>${position.createdDate ? new Date(position.createdDate).toLocaleString() : 'Дата не указана'}</td>
                     <td>
-                        <button onclick="getPosition('${position.id}')">Изменить</button>
-                        <button onclick="deletePosition(this.closest('tr'))">Удалить</button>
+                        <button onclick="getPosition('${position.id}')" class="btn btn-warning btn-sm">Изменить</button>
+                        <button onclick="deletePosition(this.closest('tr'))" class="btn btn-danger btn-sm">Удалить</button>
                     </td>
                 </tr>
             `;
         }
+        
 
-        // Обработка событий
-        document.getElementById("resetBtn").addEventListener("click", resetForm);
 
-        document.getElementById("saveBtn").addEventListener("click", async () => {
-            const id = document.getElementById("positionId").value;
-            const position = {
-                name: document.getElementById("positionName").value,
-                plant: positionPlantSelect.value,
-                department: positionDepartmentSelect.value,
-            };
+    // Обработка событий
+    document.getElementById("resetBtn").addEventListener("click", resetForm);
 
-            if (id) {
-                position.id = id;
-                await editPosition(position);
-            } else {
-                await createPosition(position);
-            }
+    document.getElementById("saveBtn").addEventListener("click", async () => {
+        const id = document.getElementById("positionId").value;
+        const position = {
+            name: document.getElementById("positionName").value,
+            plant: positionPlantSelect.value,
+            department: positionDepartmentSelect.value,
+        };
 
-            resetForm();
-        });
+        if (id) {
+            position.id = id;
+            await editPosition(position);
+        } else {
+            await createPosition(position);
+        }
 
-        // Загрузка позиций, заводов и подразделений при инициализации
-        getPlants();
-        getDepartments();
-        getPositions();
+        resetForm();
+    });
 
-        // Обработкаобновлений на других страницах
-        window.addEventListener('storage', function(event) {
-            if (event.key === 'positionUpdated') {
-                getPositions();
-            }
-        });
-    </script>
+    // Загрузка позиций, заводов и подразделений при инициализации
+    getPlants();
+    getDepartments();
+    getPositions();
+
+    // Обработка обновлений на других страницах
+    window.addEventListener('storage', function(event) {
+        if (event.key === 'positionUpdated') {
+            getPositions();
+        }
+    });
+</script>
 </body>
 </html>

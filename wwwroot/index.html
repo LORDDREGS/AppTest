@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         table {
             width: 100%;
@@ -30,57 +31,77 @@
     <h1>Управление пользователями</h1>
     <div>
         <h2>Форма пользователя</h2>
-        <input type="hidden" id="userId" />
-        <p>
-            Имя:<br/>
-            <input id="userFirstName" />
-        </p>
-        <p>
-            Фамилия:<br />
-            <input id="userLastName" />
-        </p>
-        <p>
-            Отчество:<br />
-            <input id="userMiddleName" />
-        </p>
-        <p>
-            Email:<br />
-            <input id="userEmail" type="email" />
-        </p>
-        <p>
-            Роли (через запятую):<br />
-            <input id="userRoles" />
-        </p>
-        <p>
-            Завод:<br />
-            <select id="userPlant">
-                <option value="">Выберите завод</option>
-            </select>
-        </p>
-        <p>
-            Подразделение:<br />
-            <select id="userDepartment">
-                <option value="">Выберите подразделение</option>
-            </select>
-        </p>
-        <p>
-            Позиция:<br />
-            <select id="userPosition">
-                <option value="">Выберите позицию</option>
-            </select>
-        </p>
-        <p>
-            <button id="saveBtn">Сохранить</button>
-            <button id="resetBtn">Сбросить</button>
-        </p>
+        <form class="row gx-3 gy-2 align-items-center">
+            <input type="hidden" id="userId" />
+            
+            <div class="col-sm-3">
+                <label class="visually-hidden" for="userFirstName">Имя</label>
+                <input type="text" class="form-control" id="userFirstName" placeholder="Имя">
+            </div>
+            
+            <div class="col-sm-3">
+                <label class="visually-hidden" for="userLastName">Фамилия</label>
+                <input type="text" class="form-control" id="userLastName" placeholder="Фамилия">
+            </div>
+            
+            <div class="col-sm-3">
+                <label class="visually-hidden" for="userMiddleName">Отчество</label>
+                <input type="text" class="form-control" id="userMiddleName" placeholder="Отчество">
+            </div>
+            
+            <div class="col-sm-3">
+                <label class="visually-hidden" for="userEmail">Email</label>
+                <input type="email" class="form-control" id="userEmail" placeholder="Email">
+            </div>
+            
+            <div class="col-sm-3">
+                <label class="visually-hidden" for="userRoles">Роли (через запятую)</label>
+                <input type="text" class="form-control" id="userRoles" placeholder="Роли">
+            </div>
+            
+            <div class="col-sm-3">
+                <label class="visually-hidden" for="userPlant">Завод</label>
+                <select class="form-select" id="userPlant">
+                    <option value="">Выберите завод</option>
+                </select>
+            </div>
+            
+            <div class="col-sm-3">
+                <label class="visually-hidden" for="userDepartment">Подразделение</label>
+                <select class="form-select" id="userDepartment">
+                    <option value="">Выберите подразделение</option>
+                </select>
+            </div>
+            
+            <div class="col-sm-3">
+                <label class="visually-hidden" for="userPosition">Позиция</label>
+                <select class="form-select" id="userPosition">
+                    <option value="">Выберите позицию</option>
+                </select>
+            </div>
+            
+            <div class="col-auto">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="userRemember">
+                    <label class="form-check-label" for="userRemember">Запомнить меня</label>
+                </div>
+            </div>
+            
+            <div class="col-auto">
+                <button type="button" id="saveBtn" class="btn btn-primary">Сохранить</button>
+                <button type="button" id="resetBtn" class="btn btn-secondary">Сбросить</button>
+            </div>
+        </form>
     </div>
-    <div class="action-buttons">
-        <button onclick="resetForm()">Добавить нового пользователя</button>
-        <a href="plants.html" target="_blank">Управление заводами</a>
-        <a href="departments.html" target="_blank">Управление подразделениями</a>
-        <a href="position.html" target="_blank">Управление позициями</a>
+    
+    <div class="action-buttons mt-4">
+        <button onclick="resetForm()" class="btn btn-success">Добавить нового пользователя</button>
+        <a href="plants.html" class="btn btn-info" target="_blank">Управление заводами</a>
+        <a href="departments.html" class="btn btn-info" target="_blank">Управление подразделениями</a>
+        <a href="position.html" class="btn btn-info" target="_blank">Управление позициями</a>
     </div>
-    <table>
+    
+    <table class="table mt-4">
         <thead>
             <tr>
                 <th>ID</th>
@@ -187,6 +208,7 @@
             }
         }
 
+
         // Добавление нового пользователя
         async function createUser(user) {
             try {
@@ -262,27 +284,35 @@
             const plantName = plants.find(plant => plant.id === user.plant)?.name || 'Не указан';
             const departmentName = departments.find(department => department.id === user.department)?.name || 'Не указано';
             const positionName = positions.find(position => position.id === user.position)?.name || 'Не указано';
+        
+            // Проверка на корректность даты
+            const createdDate = user.createdDate ? new Date(user.createdDate) : null;
+            const formattedDate = createdDate && !isNaN(createdDate.getTime()) ? createdDate.toLocaleString() : 'Дата не указана';
+        
+            // Использование текстового контента для предотвращения XSS атак
+            const escapeHtml = (text) => text ? text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+        
             return `
                 <tr data-id="${user.id}">
-                    <td>${user.id || ''}</td>
-                    <td>${user.firstName || ''}</td>
-                    <td>${user.lastName || ''}</td>
-                    <td>${user.middleName || ''}</td>
-                    <td>${user.email || ''}</td>
-                    <td>${user.roles ? user.roles.join(', ') : ''}</td>
-                    <td>${plantName}</td>
-                    <td>${departmentName}</td>
-                    <td>${positionName}</td>
-                    <td>${user.createdDate ? new Date(user.createdDate).toLocaleString() : 'Дата не указана'}</td>
+                    <td>${escapeHtml(user.id || '')}</td>
+                    <td>${escapeHtml(user.firstName || '')}</td>
+                    <td>${escapeHtml(user.lastName || '')}</td>
+                    <td>${escapeHtml(user.middleName || '')}</td>
+                    <td>${escapeHtml(user.email || '')}</td>
+                    <td>${user.roles ? escapeHtml(user.roles.join(', ')) : ''}</td>
+                    <td>${escapeHtml(plantName)}</td>
+                    <td>${escapeHtml(departmentName)}</td>
+                    <td>${escapeHtml(positionName)}</td>
+                    <td>${formattedDate}</td>
                     <td>
-                        <button onclick="getUser('${user.id}')">Изменить</button>
-                        <button onclick="deleteUser(this.closest('tr'))">Удалить</button>
+                        <button class="btn btn-warning btn-sm" onclick="getUser('${user.id}')">Изменить</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteUser(this.closest('tr'))">Удалить</button>
                     </td>
                 </tr>
             `;
         }
         
-
+        
         // Обработка событий
         document.getElementById("resetBtn").addEventListener("click", resetForm);
 

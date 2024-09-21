@@ -24,7 +24,7 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// Пользователи
+// Получить всех пользователей
 app.MapGet("/api/users", async () =>
 {
     try
@@ -59,7 +59,7 @@ app.MapGet("/api/users", async () =>
     }
 });
 
-
+// Получить пользователя по ID
 app.MapGet("/api/users/{id}", async (string id) =>
 {
     try
@@ -79,6 +79,7 @@ app.MapGet("/api/users/{id}", async (string id) =>
     }
 });
 
+// Создать нового пользователя
 app.MapPost("/api/users", async (User user) =>
 {
     try
@@ -102,6 +103,7 @@ app.MapPost("/api/users", async (User user) =>
     }
 });
 
+// Обновить существующего пользователя
 app.MapPut("/api/users/{id}", async (string id, User updatedUser) =>
 {
     try
@@ -136,6 +138,7 @@ app.MapPut("/api/users/{id}", async (string id, User updatedUser) =>
     }
 });
 
+// Удалить пользователя по ID
 app.MapDelete("/api/users/{id}", async (string id) =>
 {
     try
@@ -154,6 +157,7 @@ app.MapDelete("/api/users/{id}", async (string id) =>
         return Results.Problem("Internal Server Error");
     }
 });
+
 
 // Заводы (Plants)
 app.MapGet("/api/plants", async () =>
