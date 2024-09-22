@@ -8,6 +8,8 @@
     <style>
         body {
             padding: 20px;
+            position: relative;
+            min-height: 100vh;
         }
         h1, h2 {
             margin-left: 20px; /* Смещение заголовков правее */
@@ -53,13 +55,18 @@
         </p>
     </div>
 
-    <table class="table">
+    <div class="action-buttons mt-4">
+        <button onclick="resetPlantForm()" class="btn btn-success">Добавить новый завод</button>
+        <button type="button" class="btn btn-info" onclick="window.location.href='http://localhost:5279/departments.html'">Управление подразделениями</button>
+    </div>
+
+    <table class="table mt-4">
         <thead>
             <tr>
                 <th>ID</th>
                 <th>Название</th>
                 <th>Краткое название</th>
-                <th></th> <!-- Убрана колонка "Действия", оставлен пустой столбец для кнопок -->
+                <th>Действия</th> <!-- Добавлен заголовок для столбца действий -->
             </tr>
         </thead>
         <tbody id="plantList"></tbody>
@@ -173,8 +180,8 @@
                     <td>${plant.name || ''}</td>
                     <td>${plant.shortName || ''}</td>
                     <td>
-                        <button onclick="getPlant('${plant.id}')" class="btn btn-outline-primary btn-sm">Изменить</button>
-                        <button onclick="deletePlant(this.closest('tr'))" class="btn btn-outline-danger btn-sm">Удалить</button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="getPlant('${plant.id}')">Изменить</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="deletePlant(this.closest('tr'))">Удалить</button>
                     </td>
                 </tr>
             `;
